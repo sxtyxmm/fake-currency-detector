@@ -45,6 +45,14 @@
       </div>
     </div>
 
+    <!-- Clear All Logs -->
+    <form method="POST" action="/clear-logs" onsubmit="return confirm('Are you sure you want to clear all logs?');">
+    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg mb-4">
+      🧹 Clear All Logs
+    </button>
+    </form>
+
+
     <!-- Table -->
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm text-left text-gray-700 border border-gray-300 rounded-lg overflow-hidden">

@@ -159,3 +159,15 @@ def chart_data():
         data[label] = count
 
     return data
+
+@app.route("/clear-logs", methods=["POST"])
+def clear_logs():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    import sqlite3
+    with sqlite3.connect("predictions.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM predictions")
+        conn.commit()
+    return redirect(url_for("admin"))
