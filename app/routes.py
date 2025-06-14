@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.secret_key = "super-secret-key"  # for session cookies
 
 # Load trained model
-model = load_model('app/model/currency_cnn.h5')
+model = load_model('app/model/currency_cnn.keras')
 
 # Allowed extensions
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}

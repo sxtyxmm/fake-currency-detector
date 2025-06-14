@@ -56,4 +56,4 @@ model.fit(
 )
 
 # Save
-model.save("./app/model/currency_cnn.h5")
+model.save("./app/model/currency_cnn.keras")
