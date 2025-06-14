@@ -34,7 +34,7 @@ app/templates/__pycache__/
 *.hdf5
 *.pkl
 *.joblib
-*.keras
+app/model/*.keras
 
 # Test/cache
 .cache/
