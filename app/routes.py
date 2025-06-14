@@ -45,7 +45,7 @@ def index():
         file.save(filepath)
 
         img = prepare_image(filepath)
-        pred = model.predict(img)[0][0]
+        pred = model.predict(img)[0][0].item()
         confidence = round((pred if pred > 0.5 else 1 - pred) * 100, 2)
         label = "Real" if pred > 0.5 else "Fake"
         result = f"{label} Currency (Confidence: {confidence}%)"

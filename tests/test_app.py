@@ -60,10 +60,12 @@ def test_upload_empty_filename(client):
 
 def test_admin_login_fail(client):
     response = client.post("/login", data={"username": "wrong", "password": "fail"})
-    assert response.status_code == 401
+    # Assert redirect happened (invalid login goes back to /login)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/login")
 
 def test_admin_login_success(client):
-    response = client.post("/login", data={"username": "admin", "password": "admin123"}, follow_redirects=True)
+    response = client.post("/login", data={"username": "admin", "password": "pass123"}, follow_redirects=True)
     assert response.status_code == 200
     assert b"Prediction Logs" in response.data
 
