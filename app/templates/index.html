@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fake Currency Detector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-purple-100 via-blue-100 to-green-100 min-h-screen flex items-center justify-center font-sans">
+
+  <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center border border-blue-300">
+    <h1 class="text-3xl font-bold text-blue-700 mb-6">💵 Fake Currency Detector</h1>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+      <input type="file" name="currency" accept="image/*"
+             class="block w-full border border-gray-300 rounded-lg p-2 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+
+      <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all">
+        🔍 Detect Now
+      </button>
+    </form>
+
+    <p class="mt-6 text-sm text-gray-600">
+      View past predictions? 👉 <a href="/admin" class="text-blue-600 hover:underline font-medium">Admin Panel</a>
+    </p>
+  </div>
+
+</body>
+</html>

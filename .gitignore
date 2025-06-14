@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.log
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+
+# VS Code
+.vscode/
+
+# Flask
+instance/
+*.db
+*.sqlite3
+
+# Flask sessions / uploads
+app/static/*.png
+app/static/*.jpg
+app/static/*.jpeg
+app/static/uploads/
+app/__pycache__/
+app/templates/__pycache__/
+
+# Model files
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+
+# Test/cache
+.cache/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+tests/__pycache__/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Reports
+*.csv
+*.xlsx
+
+# IDE
+.idea/
+*.iml
+
+# GitHub Codespaces or JetBrains IDEs
+.gitpod.yml
+*.code-workspace
+
+# Deployment
+*.egg-info/
+dist/
+build/

@@ -1,0 +1,8 @@
+flask
+tensorflow
+opencv-python
+scikit-learn
+matplotlib
+pytest
+pytest-flask
+pytest-cov
