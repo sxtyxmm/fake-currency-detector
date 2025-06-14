@@ -63,7 +63,7 @@ App will be available at `http://localhost:5000/`
 
 | Username | Password   |
 |----------|------------|
-| `admin`  | `admin123` |
+| `admin`  | `pass123` |
 
 - View prediction history
 - Download prediction logs as CSV

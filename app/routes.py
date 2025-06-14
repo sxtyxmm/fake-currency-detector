@@ -7,7 +7,7 @@ from app.database import log_prediction
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from werkzeug.utils import secure_filename
-from flask import Flask, request, render_template, redirect, url_for, session
+from flask import Flask, request, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Store only the hashed password
@@ -101,13 +101,9 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        hash = os.environ.get("ADMIN_HASHED_PW")
-        if not hash:
-            # fallback for testing
-            hash = generate_password_hash("admin123")
-
-        if username != "admin" or not check_password_hash(hash, password):
-            return "Invalid credentials", 401
+        if username != ADMIN_USERNAME or not check_password_hash(ADMIN_PASSWORD_HASH, password):
+            flash("Invalid credentials", "error")  # flash the error
+            return redirect(url_for("login"))
 
         session["logged_in"] = True
         return redirect(url_for("admin"))
