@@ -1,47 +1,34 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for, session, flash, Response
 import os
-import time
-import threading
+import uuid
 import numpy as np
+import io
+import csv
+import sqlite3
 from app.database import log_prediction
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from werkzeug.utils import secure_filename
-from flask import Flask, request, render_template, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Store only the hashed password
+# Config
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = generate_password_hash("pass123")  # Replace "pass123" if needed
+ADMIN_PASSWORD_HASH = generate_password_hash("pass123")
 
-# Initialize Flask app
 app = Flask(__name__)
-app.secret_key = "super-secret-key"  # for session cookies
+app.secret_key = "super-secret-key"
 
-# Load trained model
-model = load_model('app/model/currency_cnn.keras')
-
-# Allowed extensions
+# Load model
+model = load_model("app/model/currency_cnn.keras")
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 
-# Validate file extension
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Prepare image for prediction
-def prepare_image(image_path):
-    img = load_img(image_path, target_size=(128, 128))
-    img_array = img_to_array(img) / 255.0
-    return np.expand_dims(img_array, axis=0)
-
-# Auto-delete image after response
-def delayed_delete(path):
-    try:
-        time.sleep(5)
-        os.remove(path)
-        print(f"[Auto-Delete] Removed: {path}")
-    except Exception as e:
-        print(f"[Auto-Delete Failed] {e}")
+def prepare_image(path):
+    img = load_img(path, target_size=(128, 128))
+    arr = img_to_array(img) / 255.0
+    return np.expand_dims(arr, axis=0)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -49,67 +36,47 @@ def index():
         file = request.files.get("currency")
         if not file:
             return "No file uploaded", 400
-
         if not allowed_file(file.filename):
             return "Only JPG, JPEG, PNG files are allowed", 400
 
-        filename = secure_filename(file.filename)
-        file_path = os.path.join("app/static", filename)
-        file.save(file_path)
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join("app/static", filename)
+        file.save(filepath)
 
-        # Make prediction
-        img = prepare_image(file_path)
-        prediction = model.predict(img)[0][0]
+        img = prepare_image(filepath)
+        pred = model.predict(img)[0][0]
+        confidence = round((pred if pred > 0.5 else 1 - pred) * 100, 2)
+        label = "Real" if pred > 0.5 else "Fake"
+        result = f"{label} Currency (Confidence: {confidence}%)"
 
-        # Adjust confidence for displayed class
-        if prediction > 0.5:
-            final_confidence = round(prediction * 100, 2)
-            result = f"Real Currency (Confidence: {final_confidence}%)"
-        else:
-            final_confidence = round((1 - prediction) * 100, 2)
-            result = f"Fake Currency (Confidence: {final_confidence}%)"
-        
-        # Log prediction to SQLite
-        label = "Real" if prediction > 0.5 else "Fake"
-        log_prediction(filename, label, final_confidence)
-
-        # Schedule image deletion
-        threading.Thread(target=delayed_delete, args=(file_path,)).start()
-
-        # Show result
-        return render_template("result.html", result=result, image=filename, confidence=final_confidence)
+        log_prediction(filename, label, confidence)
+        return render_template("result.html", result=result, image=filename, confidence=confidence)
 
     return render_template("index.html")
 
-
-@app.route("/admin", methods=["GET", "POST"])
+@app.route("/admin", methods=["GET"])
 def admin():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
-    
-    import sqlite3
+
     with sqlite3.connect("predictions.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT filename, label, confidence, timestamp FROM predictions ORDER BY id DESC")
         logs = cursor.fetchall()
     return render_template("admin.html", logs=logs)
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-
         if username != ADMIN_USERNAME or not check_password_hash(ADMIN_PASSWORD_HASH, password):
-            flash("Invalid credentials", "error")  # flash the error
+            flash("Invalid credentials", "error")
             return redirect(url_for("login"))
-
         session["logged_in"] = True
         return redirect(url_for("admin"))
-
     return render_template("login.html")
-
 
 @app.route("/logout")
 def logout():
@@ -118,26 +85,16 @@ def logout():
 
 @app.route("/download-csv")
 def download_csv():
-    import csv
-    from flask import Response
-    import io
-    import sqlite3
-
     output = io.StringIO()
     writer = csv.writer(output)
-
-    # CSV Header
     writer.writerow(["Filename", "Label", "Confidence (%)", "Timestamp"])
 
-    # Fetch logs
     with sqlite3.connect("predictions.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT filename, label, confidence, timestamp FROM predictions ORDER BY id DESC")
         logs = cursor.fetchall()
-
-    # Write data
-    for row in logs:
-        writer.writerow(row)
+        for row in logs:
+            writer.writerow(row)
 
     output.seek(0)
     return Response(
@@ -148,7 +105,6 @@ def download_csv():
 
 @app.route("/chart-data")
 def chart_data():
-    import sqlite3
     with sqlite3.connect("predictions.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT label, COUNT(*) FROM predictions GROUP BY label")
@@ -165,9 +121,24 @@ def clear_logs():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    import sqlite3
+    # Get list of filenames before clearing DB
     with sqlite3.connect("predictions.db") as conn:
         cursor = conn.cursor()
+        cursor.execute("SELECT filename FROM predictions")
+        files = cursor.fetchall()
+
+        # Clear the DB
         cursor.execute("DELETE FROM predictions")
         conn.commit()
+
+    # Delete images from static folder
+    for (filename,) in files:
+        path = os.path.join("app/static", filename)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"[Deleted] {path}")
+            except Exception as e:
+                print(f"[Error deleting] {path}: {e}")
+
     return redirect(url_for("admin"))
